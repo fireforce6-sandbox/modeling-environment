@@ -1,0 +1,20 @@
+vocabulary <http://example.com/test#> as v {
+
+    aspect A
+
+    concept B < A
+
+    concept C < A
+
+    concept D < B
+
+    relation rel1 [ from A to C  ]
+
+    relation entity Rel2 [ from A to B  ]
+
+    scalar propertt p [
+        domain A
+        range xsd:integer
+    ]
+
+}
