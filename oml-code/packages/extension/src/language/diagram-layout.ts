@@ -1,9 +1,10 @@
 import type { LangiumSharedServices } from 'langium/lsp';
 import type { SModelRoot } from 'sprotty-protocol';
+import { URI } from 'langium';
 import { DefaultLayoutConfigurator } from 'sprotty-elk/lib/elk-layout.js';
 import { ElkLayoutEngine } from 'sprotty-elk/lib/elk-layout.js';
 import type { ElkFactory } from 'sprotty-elk/lib/elk-layout.js';
-import { computeDiagramModel, type DiagramModel } from 'oml-language';
+import { computeDiagramModel, type DiagramModel, isVocabulary, isScalarProperty, isConcept, type Vocabulary, type ScalarProperty as AstScalarProperty } from 'oml-language';
 
 // Prepare an Elk factory usable in the CJS-bundled extension host.
 const elkFactory: ElkFactory = () => {
@@ -47,10 +48,48 @@ class OmlLayoutConfigurator extends DefaultLayoutConfigurator {
 
 const layoutEngine = new ElkLayoutEngine(elkFactory, undefined as any, new OmlLayoutConfigurator());
 
+// Build a map of concept name -> scalar property names (declared with that concept in their domain)
+async function computeConceptScalarProps(shared: LangiumSharedServices, uri: string): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+  const docs = shared.workspace.LangiumDocuments;
+  const document = await docs.getOrCreateDocument(URI.parse(uri));
+  await shared.workspace.DocumentBuilder.build([document], { validation: false });
+
+  const root: any = document.parseResult.value;
+  if (isVocabulary(root)) {
+    const vocab = root as Vocabulary;
+    const scalarProps: AstScalarProperty[] = [] as any;
+    for (const stmt of vocab.ownedStatements ?? []) {
+      if (isScalarProperty(stmt)) scalarProps.push(stmt as any);
+    }
+    for (const sp of scalarProps) {
+      const spName = (sp as any).name as string | undefined;
+      if (!spName) continue;
+      const ranges: string[] = ((sp as any).ranges ?? [])
+        .map((r: any) => r?.ref?.name as string | undefined)
+        .filter((n: string | undefined): n is string => !!n);
+      const rangeText = ranges.length > 0 ? `: ${ranges.join(' | ')}` : '';
+      const line = `${spName}${rangeText}`;
+
+      const domains: any[] = (sp as any).domains ?? [];
+      for (const d of domains) {
+        const ent = d?.ref;
+        if (ent && isConcept(ent) && ent.name) {
+          const arr = map.get(ent.name) ?? [];
+          if (!arr.includes(line)) arr.push(line);
+          map.set(ent.name, arr);
+        }
+      }
+    }
+  }
+  return map;
+}
+
 // Map our simple DiagramModel to a Sprotty SModelRoot suitable for ELK layout
-function diagramToSprotty(model: DiagramModel): SModelRoot {
+function diagramToSprotty(model: DiagramModel, conceptProps?: Map<string, string[]>): SModelRoot {
   const nodeWidth = 120;
-  const nodeHeight = 56;
+  const baseNodeHeight = 56;
+  const lineHeight = 18;
   const nodes: any[] = [];
   const edges: any[] = [];
 
@@ -59,22 +98,33 @@ function diagramToSprotty(model: DiagramModel): SModelRoot {
     if (n.kind !== 'relation') {
       const avgCharPx = 8;
       const paddingX = 32;
-      const labelText = n.label ?? n.id;
-      const computedWidth = Math.max(nodeWidth, Math.min(600, paddingX + avgCharPx * labelText.length));
+      const paddingY = 16;
+  const header = n.label ?? n.id;
+
+  // For concept nodes, append scalar properties (with ranges) below a divider.
+  const props = n.kind === 'concept' ? (conceptProps?.get(n.id) ?? []) : [];
+  const hasProps = props.length > 0;
+  const lines: string[] = hasProps ? [header, ...props] : [header];
+
+      const longest = lines.reduce((m, s) => Math.max(m, s.length), 0);
+      const computedWidth = Math.max(nodeWidth, Math.min(600, paddingX + avgCharPx * longest));
+  const labelBlockHeight = Math.max(20, lines.length * lineHeight);
+      const computedHeight = Math.max(baseNodeHeight, paddingY + labelBlockHeight + 8);
 
       nodes.push({
         id: n.id,
         type: 'node:rect',
-        size: { width: computedWidth, height: nodeHeight },
+        size: { width: computedWidth, height: computedHeight },
         layoutOptions: {
-          'org.eclipse.elk.portConstraints': 'FREE'  // Changed to FREE
+          'org.eclipse.elk.portConstraints': 'FREE'
         },
         children: [
           {
             id: `${n.id}_label`,
-            type: 'label',
-            text: n.label,
-            layoutOptions: { 'org.eclipse.elk.labelSize': `${computedWidth - 20},20` }
+            type: 'label:multiline',
+            text: lines.join('\n'),
+            splitIndex: hasProps ? 1 : 0, // draw divider after header when props exist
+            layoutOptions: { 'org.eclipse.elk.labelSize': `${computedWidth - 20},${labelBlockHeight}` }
           }
         ]
       });
@@ -125,7 +175,8 @@ function diagramToSprotty(model: DiagramModel): SModelRoot {
 
 export async function computeLaidOutSModelForUri(shared: LangiumSharedServices, uri: string): Promise<SModelRoot> {
   const diagram = await computeDiagramModel(shared, uri);
-  const root = diagramToSprotty(diagram);
+  const conceptProps = await computeConceptScalarProps(shared, uri);
+  const root = diagramToSprotty(diagram, conceptProps);
   const laidOut = await layoutEngine.layout(root as any);
   return laidOut as unknown as SModelRoot;
 }

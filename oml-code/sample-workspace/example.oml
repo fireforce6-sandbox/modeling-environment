@@ -1,20 +1,35 @@
-vocabulary <http://example.com/test#> as v {
+vocabulary <http://opencaesar.io/example/vocabulary/family#> as family {
+	
+  	
+	concept Person [key age] < [
+		restricts parent to max 2
+	]
+	
+	concept Man < Person
+	concept Woman < Person
+	
+	relation parent[
+		from Person to Person
+		reverse child
+	]
+	
+	relation father [
+		from Person to Man
+		functional
+	] < parent
+	
+	relation mother [
+		from Person to Woman
+		functional
+	] < parent
+	
+	scalar property age [
+		domain Person
+		range double
+		functional
+	]
 
-    aspect A
-
-    concept B < A
-
-    concept C < A
-
-    concept D < B
-
-    relation rel1 [ from A to C  ]
-
-    relation entity Rel2 [ from A to B  ]
-
-    scalar propertt p [
-        domain A
-        range xsd:integer
-    ]
-
+	scalar double[
+		oneOf 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+	]
 }

@@ -52,7 +52,14 @@ function createOmlContainer(baseDiv: string): Container {
     
     return {
       bgColor: isLight ? '#ffffff' : '#1e1e1e',
-      edgeColor: isLight ? '#8e8e8e' : '#646695'
+      edgeColor: isLight ? '#8e8e8e' : '#646695',
+      // Distinct colors for relation vs specialization
+      relationColor: isLight ? '#1e88e5' : '#64b5f6',
+      specializationColor: isLight ? '#8e24aa' : '#b39ddb',
+      relationHoverColor: isLight ? '#1565c0' : '#42a5f5',
+      specializationHoverColor: isLight ? '#6a1b9a' : '#9575cd',
+      relationSelectedColor: isLight ? '#0d47a1' : '#2196f3',
+      specializationSelectedColor: isLight ? '#4a148c' : '#7e57c2'
     };
   }
 
@@ -88,7 +95,7 @@ function createOmlContainer(baseDiv: string): Container {
             attrs: {
               d: 'M0,0 L12,6 L0,12',
               fill: 'none',
-              stroke: edgeColor,
+              stroke: getThemeColors().relationColor,
               'stroke-width': '1.5',
               'stroke-linejoin': 'round',
               'stroke-linecap': 'round'
@@ -114,7 +121,7 @@ function createOmlContainer(baseDiv: string): Container {
             attrs: {
               d: 'M0,0 L10,5 L0,10 Z',
               fill: bgColor,
-              stroke: edgeColor,
+              stroke: getThemeColors().specializationColor,
               'stroke-width': '1.5',
               'stroke-linejoin': 'miter'
             }
@@ -140,7 +147,7 @@ function createOmlContainer(baseDiv: string): Container {
             attrs: {
               d: 'M0,0 L12,6 L0,12',
               fill: 'none',
-              stroke: activeSelectColor,
+              stroke: getThemeColors().relationHoverColor,
               'stroke-width': '1.5',
               'stroke-linejoin': 'round',
               'stroke-linecap': 'round'
@@ -166,7 +173,7 @@ function createOmlContainer(baseDiv: string): Container {
             attrs: {
               d: 'M0,0 L10,5 L0,10 Z',
               fill: bgColor,
-              stroke: activeSelectColor,
+              stroke: getThemeColors().specializationHoverColor,
               'stroke-width': '1.5',
               'stroke-linejoin': 'miter'
             }
@@ -192,7 +199,7 @@ function createOmlContainer(baseDiv: string): Container {
             attrs: {
               d: 'M0,0 L12,6 L0,12',
               fill: 'none',
-              stroke: activeSelectColor,
+              stroke: getThemeColors().relationSelectedColor,
               'stroke-width': '1.5',
               'stroke-linejoin': 'round',
               'stroke-linecap': 'round'
@@ -218,7 +225,7 @@ function createOmlContainer(baseDiv: string): Container {
             attrs: {
               d: 'M0,0 L10,5 L0,10 Z',
               fill: bgColor,
-              stroke: activeSelectColor,
+              stroke: getThemeColors().specializationSelectedColor,
               'stroke-width': '1.5',
               'stroke-linejoin': 'miter'
             }
@@ -235,6 +242,7 @@ function createOmlContainer(baseDiv: string): Container {
       const lineVNode = super.renderLine(edge, segments, context, args) as VNode;
       const kind = (edge as any)?.kind ?? (edge as any)?.data?.kind ?? 'relation';
       const hasMarker = (edge as any)?.hasMarker ?? true; // default to true for backward compatibility
+      const { relationColor, specializationColor } = getThemeColors();
       
       // Determine which marker to use based on edge kind and hasMarker flag
       let markerId: string | undefined;
@@ -255,6 +263,13 @@ function createOmlContainer(baseDiv: string): Container {
       } else {
         delete attrs['marker-end'];
       }
+
+      // Set base stroke color to match marker type
+      if (kind === 'specialization') {
+        attrs['stroke'] = specializationColor;
+      } else {
+        attrs['stroke'] = relationColor;
+      }
       
       return lineVNode;
     }
@@ -269,6 +284,54 @@ function createOmlContainer(baseDiv: string): Container {
   configureModelElement(container, 'node:rect', SNodeImpl, RectangularNodeView);
   // Use the default label view
   configureModelElement(container, 'label', SLabelImpl, SLabelView);
+
+  // Multiline label view: split text by \n and render tspans with line spacing
+  class MultilineLabelView extends SLabelView {
+    override render(model: any, context: RenderingContext): VNode {
+      const text: string = (model && model.text) || '';
+      const lines = String(text).split(/\n/);
+      const splitIndex: number = (model && (model as any).splitIndex) ?? 0;
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const lineHeight = 16; // px per line
+
+      const startDy = -(lineHeight * (lines.length - 1)) / 2; // vertically center the block
+      const tspans = lines.map((ln, i) =>
+        h('tspan', { ns: svgNS, attrs: { x: '0', dy: i === 0 ? `${startDy}` : `${lineHeight}` } }, ln)
+      );
+
+      // Render text
+      const textVNode = h('text', {
+        ns: svgNS,
+        class: { 'sprotty-label': true },
+        attrs: { 'text-anchor': 'middle', 'alignment-baseline': 'middle' }
+      }, tspans as any) as unknown as VNode;
+
+      // If we have a split between header and props, draw a line between them
+      const hasDivider = Number.isFinite(splitIndex) && splitIndex > 0 && splitIndex < lines.length;
+      if (!hasDivider) {
+        return textVNode;
+      }
+
+      // Compute y for divider: halfway between line splitIndex-1 and splitIndex
+      const y = (startDy + (splitIndex - 1) * lineHeight) + lineHeight / 2;
+      const width: number = (model?.size?.width ?? 120) - 12; // padding from edges
+      const x1 = -width / 2;
+      const x2 = width / 2;
+
+      const lineVNode = h('line', {
+        ns: svgNS,
+        attrs: {
+          x1: String(x1), y1: String(y), x2: String(x2), y2: String(y),
+          stroke: '#888', 'stroke-width': '1'
+        }
+      });
+
+      // Group line + text
+      const group = h('g', { ns: svgNS }, [lineVNode as any, textVNode as any]);
+      return group as unknown as VNode;
+    }
+  }
+  configureModelElement(container, 'label:multiline', SLabelImpl, MultilineLabelView as any);
   configureModelElement(container, 'edge', SEdgeImpl, OmlEdgeView);
 
   // Register no-op views for routing handles to silence missing-view errors.
@@ -397,6 +460,28 @@ function setupMarkerColorWatcher() {
       // Update the marker reference if it changed
       if (lineElement.getAttribute('marker-end') !== newMarkerEnd) {
         lineElement.setAttribute('marker-end', newMarkerEnd);
+      }
+
+      // Sync line stroke color with marker type and state
+      const themeKind = document.documentElement.getAttribute('data-vscode-theme-kind');
+      const isLight = themeKind === 'light';
+      const colors = {
+        relationColor: isLight ? '#1e88e5' : '#64b5f6',
+        specializationColor: isLight ? '#8e24aa' : '#b39ddb',
+        relationHoverColor: isLight ? '#1565c0' : '#42a5f5',
+        specializationHoverColor: isLight ? '#6a1b9a' : '#9575cd',
+        relationSelectedColor: isLight ? '#0d47a1' : '#2196f3',
+        specializationSelectedColor: isLight ? '#4a148c' : '#7e57c2'
+      };
+      const useHover = hasHoverAttr && !isSelected;
+      let strokeColor: string | undefined;
+      if (isOpenArrow) {
+        strokeColor = isSelected ? colors.relationSelectedColor : useHover ? colors.relationHoverColor : colors.relationColor;
+      } else if (isClosedTriangle) {
+        strokeColor = isSelected ? colors.specializationSelectedColor : useHover ? colors.specializationHoverColor : colors.specializationColor;
+      }
+      if (strokeColor) {
+        lineElement.setAttribute('stroke', strokeColor);
       }
     });
   };
