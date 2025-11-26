@@ -19,7 +19,10 @@ export type DiagramEdge = {
     source: string;
     target: string;
     kind: 'specialization' | 'relation';
+    // Optional center label (legacy); for relations we prefer tail/head labels
     label?: string;
+    labelTail?: string;
+    labelHead?: string;
     hasMarker?: boolean; // false means no marker, true means relation arrow (for relation entity edges)
 };
 
@@ -77,31 +80,40 @@ export async function computeDiagramModel(shared: LangiumSharedServices, uri: st
         }
 
         // Relation edges for RelationEntity/UnreifiedRelation
-        // RelationEntity: creates a node in diagram + two edges (source->node, node->target with marker)
-        // UnreifiedRelation: creates direct edges only (source->target with marker, no intermediate node)
+        // RelationEntity: creates a node in diagram + two visual edges (source->node, node->target with marker)
+        // UnreifiedRelation: creates direct edges only (source->target with marker, no intermediate node).
         for (const t of termByName.values()) {
             if (isRelationEntity(t)) {
                 const relName: string | undefined = t.name;
                 if (!relName) continue;
                 const sources: any[] = (t as any).sources ?? [];
                 const targets: any[] = (t as any).targets ?? [];
+                const forwardName: string | undefined = (t as any).forwardRelation?.name;
+                const reverseName: string | undefined = (t as any).reverseRelation?.name;
                 for (const s of sources) {
                     const sName = s?.ref?.name as string | undefined;
                     if (!sName) continue;
                     for (const tg of targets) {
                         const tName = tg?.ref?.name as string | undefined;
                         if (!tName) continue;
-                        
-                        // Create first edge: source -> relation-entity node (no marker)
+
+                        const forward = forwardName ?? relName;
+                        const reverse = reverseName ?? '';
+                        const combinedLabel = reverse && forward
+                            ? `${reverse}\n${forward}`
+                            : (forward ?? reverse ?? '');
+
+                        // First visual segment: source -> relation-entity node (no marker)
                         edges.push({
                             id: `${sName}->${relName}`,
                             source: sName,
                             target: relName,
                             kind: 'relation',
-                            hasMarker: false
+                            hasMarker: false,
+                            label: combinedLabel
                         });
                         
-                        // Create second edge: relation-entity node -> target (arrow marker)
+                        // Second visual segment: relation-entity node -> target (arrow marker)
                         edges.push({
                             id: `${relName}->${tName}`,
                             source: relName,
@@ -116,13 +128,21 @@ export async function computeDiagramModel(shared: LangiumSharedServices, uri: st
                 if (!relName) continue;
                 const sources: any[] = (t as any).sources ?? [];
                 const targets: any[] = (t as any).targets ?? [];
+                const forwardName: string | undefined = (t as any).forwardRelation?.name ?? relName;
+                const reverseName: string | undefined = (t as any).reverseRelation?.name;
                 for (const s of sources) {
                     const sName = s?.ref?.name as string | undefined;
                     if (!sName) continue;
                     for (const tg of targets) {
                         const tName = tg?.ref?.name as string | undefined;
                         if (!tName) continue;
-                        
+
+                        const forward = forwardName;
+                        const reverse = reverseName ?? '';
+                        const combinedLabel = reverse && forward
+                            ? `${reverse}\n${forward}`
+                            : (forward ?? reverse ?? '');
+
                         // For unreified relations, create direct edge with arrow marker (no intermediate node)
                         edges.push({
                             id: `${sName}->${tName}`,
@@ -130,7 +150,7 @@ export async function computeDiagramModel(shared: LangiumSharedServices, uri: st
                             target: tName,
                             kind: 'relation',
                             hasMarker: true,
-                            label: relName // label shows the relation name on the edge
+                            label: combinedLabel
                         });
                     }
                 }

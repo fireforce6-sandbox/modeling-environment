@@ -48,7 +48,7 @@ class OmlLayoutConfigurator extends DefaultLayoutConfigurator {
 
 const layoutEngine = new ElkLayoutEngine(elkFactory, undefined as any, new OmlLayoutConfigurator());
 
-// Build a map of concept name -> scalar property names (declared with that concept in their domain)
+// Build a map of concept name -> scalar property display lines (declared with that concept in their domain)
 async function computeConceptScalarProps(shared: LangiumSharedServices, uri: string): Promise<Map<string, string[]>> {
   const map = new Map<string, string[]>();
   const docs = shared.workspace.LangiumDocuments;
@@ -65,11 +65,18 @@ async function computeConceptScalarProps(shared: LangiumSharedServices, uri: str
     for (const sp of scalarProps) {
       const spName = (sp as any).name as string | undefined;
       if (!spName) continue;
+
       const ranges: string[] = ((sp as any).ranges ?? [])
         .map((r: any) => r?.ref?.name as string | undefined)
         .filter((n: string | undefined): n is string => !!n);
-      const rangeText = ranges.length > 0 ? `: ${ranges.join(' | ')}` : '';
-      const line = `${spName}${rangeText}`;
+      const scalarName = ranges[0] ?? '';
+
+      // Simple cardinality approximation: functional -> [0..1], otherwise [0..*]
+      const isFunctional = !!(sp as any).functional;
+      const cardText = isFunctional ? '[0..1]' : '[0..*]';
+
+      const typePart = scalarName ? `: ${scalarName}` : '';
+      const line = `• ${spName}${typePart} ${cardText}`.trimEnd();
 
       const domains: any[] = (sp as any).domains ?? [];
       for (const d of domains) {
@@ -87,52 +94,80 @@ async function computeConceptScalarProps(shared: LangiumSharedServices, uri: str
 
 // Map our simple DiagramModel to a Sprotty SModelRoot suitable for ELK layout
 function diagramToSprotty(model: DiagramModel, conceptProps?: Map<string, string[]>): SModelRoot {
-  const nodeWidth = 120;
-  const baseNodeHeight = 56;
-  const lineHeight = 18;
+  const nodeWidth = 160;
+  const baseNodeHeight = 72;
+  const lineHeight = 20;
   const nodes: any[] = [];
   const edges: any[] = [];
 
   // Create nodes with FREE port constraints
   model.nodes.forEach((n) => {
     if (n.kind !== 'relation') {
-      const avgCharPx = 8;
-      const paddingX = 32;
-      const paddingY = 16;
-  const header = n.label ?? n.id;
+      const avgCharPx = 7;
+      const paddingX = 40;
+      const paddingY = 20;
+      const header = n.label ?? n.id;
 
-  // For concept nodes, append scalar properties (with ranges) below a divider.
-  const props = n.kind === 'concept' ? (conceptProps?.get(n.id) ?? []) : [];
-  const hasProps = props.length > 0;
-  const lines: string[] = hasProps ? [header, ...props] : [header];
+      // For concept nodes, append scalar properties (with ranges) below a divider.
+      const props = n.kind === 'concept' ? (conceptProps?.get(n.id) ?? []) : [];
+      const hasProps = props.length > 0;
+      const lines: string[] = hasProps ? [header, ...props] : [header];
 
       const longest = lines.reduce((m, s) => Math.max(m, s.length), 0);
       const computedWidth = Math.max(nodeWidth, Math.min(600, paddingX + avgCharPx * longest));
-  const labelBlockHeight = Math.max(20, lines.length * lineHeight);
+      const labelBlockHeight = Math.max(20, lines.length * lineHeight);
       const computedHeight = Math.max(baseNodeHeight, paddingY + labelBlockHeight + 8);
 
       nodes.push({
-        id: n.id,
-        type: 'node:rect',
-        size: { width: computedWidth, height: computedHeight },
-        layoutOptions: {
-          'org.eclipse.elk.portConstraints': 'FREE'
-        },
-        children: [
-          {
-            id: `${n.id}_label`,
-            type: 'label:multiline',
-            text: lines.join('\n'),
-            splitIndex: hasProps ? 1 : 0, // draw divider after header when props exist
-            layoutOptions: { 'org.eclipse.elk.labelSize': `${computedWidth - 20},${labelBlockHeight}` }
-          }
-        ]
-      });
+          id: n.id,
+          type: 'node:rect',
+          size: { width: computedWidth, height: computedHeight },
+          layoutOptions: {
+            'org.eclipse.elk.portConstraints': 'FREE'
+          },
+          children: [
+            {
+              id: `${n.id}_label`,
+              type: 'label:multiline',
+              text: lines.join('\n'),
+              splitIndex: hasProps ? 1 : 0, // draw divider after header when props exist
+              layoutOptions: { 'org.eclipse.elk.labelSize': `${computedWidth - 20},${labelBlockHeight}` }
+            }
+          ]
+        });
     }
   });
 
   model.edges.forEach((e) => {
     const isSpec = e.kind === 'specialization';
+    // Estimate label sizes to ensure enough edge length for text
+    const avgCharPx = 7;
+    const labelSize = (txt?: string) => {
+      const base = (txt ? txt.length : 0) * avgCharPx;
+      // Make the label box a bit wider than the text so ELK
+      // reserves more horizontal space and keeps the arrow
+      // away from node borders.
+      const w = Math.max(60, Math.min(360, base + 40));
+      return `${w},20`;
+    };
+
+    const edgeChildren: any[] = [];
+
+    // Legacy/center label (if present and no tail/head labels)
+    if (e.label && !e.labelTail && !e.labelHead) {
+      edgeChildren.push({
+        id: `${e.id}_label_center`,
+        type: 'label:multiline',
+        text: e.label,
+        layoutOptions: {
+          'org.eclipse.elk.labelSize': labelSize(e.label),
+          'org.eclipse.elk.edgeLabels.placement': 'CENTER'
+        }
+      });
+    }
+
+    // const isSelf = e.source === e.target;
+
     edges.push({
       id: e.id,
       type: 'edge',
@@ -151,14 +186,19 @@ function diagramToSprotty(model: DiagramModel, conceptProps?: Map<string, string
         : {
           'org.eclipse.elk.edge.type': 'ASSOCIATION',
           'org.eclipse.elk.edge.routing': 'POLYLINE',
+          // Encourage relation edges to start on the left side of the
+          // source node and end on the right side of the target node
+          // so that reverse and forward labels are visually separated.
           'org.eclipse.elk.edge.source.side': 'WEST',
-          'org.eclipse.elk.edge.target.side': 'WEST',
+          'org.eclipse.elk.edge.target.side': 'EAST',
+          // Give relation edges more room around labels and nodes so
+          // stacked reverse/forward text does not collide with boxes.
+          'org.eclipse.elk.spacing.edgeNode': '32',
+          'org.eclipse.elk.spacing.edgeLabel': '24',
           'org.eclipse.elk.layered.priority.direction': '0',
           'org.eclipse.elk.layered.priority.straightness': '0'
         },
-      children: e.label
-        ? [{ id: `${e.id}_label`, type: 'label', text: e.label, layoutOptions: { 'org.eclipse.elk.labelSize': '60,14' } }]
-        : []
+      children: edgeChildren
     });
   });
 

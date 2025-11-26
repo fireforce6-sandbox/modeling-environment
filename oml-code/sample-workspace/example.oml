@@ -1,7 +1,7 @@
 vocabulary <http://opencaesar.io/example/vocabulary/family#> as family {
 	
   	
-	concept Person [key age] < [
+	concept Person < [
 		restricts parent to max 2
 	]
 	
