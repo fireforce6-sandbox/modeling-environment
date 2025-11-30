@@ -275,14 +275,14 @@ function createOmlContainer(baseDiv: string): Container {
     }
   }
 
-  // Use the default SLabelView for labels; ELK/Sprotty handle label placement.
+  // Use the default SLabelView for simple labels; ELK/Sprotty handle placement.
 
   // No client-side LayoutConfigurator necessary when layout is server-side.
 
   // Model elements
   configureModelElement(container, 'graph', SGraphImpl, OmlGraphView);
   configureModelElement(container, 'node:rect', SNodeImpl, RectangularNodeView);
-  // Use the default label view
+  // Use the default label view for generic labels
   configureModelElement(container, 'label', SLabelImpl, SLabelView);
 
   // Multiline label view: split text by \n and render tspans with line spacing

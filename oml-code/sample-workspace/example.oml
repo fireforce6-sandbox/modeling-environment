@@ -1,7 +1,8 @@
 vocabulary <http://opencaesar.io/example/vocabulary/family#> as family {
 	
-  	
-	concept Person < [
+  	aspect Named 
+	
+	concept Person < Named [
 		restricts parent to max 2
 	]
 	

@@ -68,6 +68,12 @@ rect.sprotty-node {
   transition: stroke 0.1s, fill 0.1s;
 }
 
+/* Small concept/aspect markers inside nodes */
+.oml-kind-marker {
+  font-size: 11px;
+  font-weight: 600;
+}
+
 /* Aggressive: target ANY g element that contains a rect and apply hover */
 g[id] > rect:hover {
   stroke: #00b7ff !important;

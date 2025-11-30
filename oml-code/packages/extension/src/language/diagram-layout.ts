@@ -106,7 +106,12 @@ function diagramToSprotty(model: DiagramModel, conceptProps?: Map<string, string
       const avgCharPx = 7;
       const paddingX = 40;
       const paddingY = 20;
-      const header = n.label ?? n.id;
+      const baseHeader = n.label ?? n.id;
+      const header = n.kind === 'concept'
+        ? `C: ${baseHeader}`
+        : n.kind === 'aspect'
+          ? `A: ${baseHeader}`
+          : baseHeader;
 
       // For concept nodes, append scalar properties (with ranges) below a divider.
       const props = n.kind === 'concept' ? (conceptProps?.get(n.id) ?? []) : [];
@@ -125,6 +130,7 @@ function diagramToSprotty(model: DiagramModel, conceptProps?: Map<string, string
           layoutOptions: {
             'org.eclipse.elk.portConstraints': 'FREE'
           },
+          kind: n.kind,
           children: [
             {
               id: `${n.id}_label`,
