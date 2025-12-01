@@ -1,6 +1,6 @@
 @dc:title "Modeling Environment Missions"
 @dc:description "Describes the missions for the Project Modeling Environment."
-description <https://fireforce6.github.io/project-environment/missions#> as missions {
+description <https://fireforce6.github.io/modeling-environment/missions#> as missions {
 
 	uses <http://purl.org/dc/elements/1.1/> as dc
 	uses <https://fireforce6.github.io/sierra/base#> as base
