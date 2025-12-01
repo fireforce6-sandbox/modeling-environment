@@ -1,0 +1,31 @@
+@dc:title "Modeling Environment Requirements"
+@dc:description "Describes the requirements for the Project Modeling Environment"
+description <https://fireforce6.github.io/modeling-environment/requirements#> as requirements {
+
+	uses <http://purl.org/dc/elements/1.1/> as dc
+	uses <https://fireforce6.github.io/sierra/base#> as base
+	uses <https://fireforce6.github.io/sierra/requirement#> as requirement
+  extends <https://fireforce6.github.io/modeling-environment/stakeholders#> as stakeholders
+
+	instance R1 : requirement:Requirement [
+		base:description "The modeling environment provides users the ability to edit OML files."
+        base:expression "The modeling environment shall allow users to create, edit, save, and validate OML files."
+		requirement:isExpressedBy stakeholders:developer
+		requirement:isExpressedBy stakeholders:system-engineer
+	]
+
+	instance R2 : requirement:Requirement [
+		base:description "The Modeling Environment provides diagramming."
+        base:expresion "The modeling environment shall provide diagrammatic views of OML vocabularies."
+		requirement:isExpressedBy stakeholders:developer
+        requirement:isExpressedBy stakeholders:system-engineer
+	]
+
+	instance R3 : requirement:Requirement [
+		base:description "The modeling environment shall be integrated through via Git."
+		base:expression "The modeling environment shall allow users to manage OML models via Git workflows."
+		requirement:isExpressedBy stakeholders:developer
+		requirement:isExpressedBy stakeholders:project-manager
+	]
+
+}

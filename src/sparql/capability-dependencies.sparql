@@ -1,0 +1,18 @@
+PREFIX base: <https://fireforce6.github.io/sierra/base#>
+PREFIX capability: <https://fireforce6.github.io/sierra/capability#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?cap1_id ?cap1_desc ?cap2_id ?cap2_desc
+WHERE {
+    ?cap1 a capability:Capability ;
+          base:description ?cap1_desc ;
+          capability:requires ?cap2 .
+    
+    ?cap2 a capability:Capability ;
+          base:description ?cap2_desc .
+    
+    # Extract instance names
+    BIND(REPLACE(STR(?cap1), "^.*[/#]([^/#]+)$", "$1") AS ?cap1_id)
+    BIND(REPLACE(STR(?cap2), "^.*[/#]([^/#]+)$", "$1") AS ?cap2_id)
+}
+ORDER BY ?cap1_id ?cap2_id

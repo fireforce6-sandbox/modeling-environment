@@ -1,0 +1,17 @@
+@dc:title "Modeling Environment Missions"
+@dc:description "Describes the missions for the Project Modeling Environment."
+description <https://fireforce6.github.io/project-environment/missions#> as missions {
+
+	uses <http://purl.org/dc/elements/1.1/> as dc
+	uses <https://fireforce6.github.io/sierra/base#> as base
+	uses <https://fireforce6.github.io/sierra/capability#> as capability
+
+	instance M1 : capability:Mission [
+		base:description "Intuitive User Experience: Needs to be easy for users to intuitively use as a capable OML editor which validates models live."
+	]
+
+	instance M2 : capability:Mission [
+		base:description "Integration: Needs to be integrated in the Git workflow to allow users to easily edit and validate their OML projects."
+	]
+
+}

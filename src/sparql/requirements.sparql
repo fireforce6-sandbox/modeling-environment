@@ -1,0 +1,17 @@
+PREFIX base: <https://fireforce6.github.io/sierra/base#>
+PREFIX requirement: <https://fireforce6.github.io/sierra/requirement#>
+
+SELECT DISTINCT ?req_id ?req_desc ?stakeholder_desc
+WHERE {
+    ?req a requirement:Requirement ;
+         base:description ?req_desc .
+    
+    OPTIONAL {
+        ?req requirement:isExpressedBy ?stakeholder .
+        ?stakeholder base:description ?stakeholder_desc .
+    }
+    
+    # Extract the instance name after the last # or /
+    BIND(REPLACE(STR(?req), "^.*[/#]([^/#]+)$", "$1") AS ?req_id)
+}
+ORDER BY ?req_id

@@ -1,0 +1,16 @@
+@dc:title "Modeling Environment Stakeholders"
+description <https://fireforce6.github.io/modeling-environment/stakeholders#> as stakeholders {
+
+	uses <http://purl.org/dc/elements/1.1/> as dc
+	uses <https://fireforce6.github.io/sierra/base#> as base
+	uses <https://fireforce6.github.io/sierra/requirement#> as requirement
+
+	instance developer : requirement:Stakeholder [
+		base:description "Developers working in the Fireforce project creating and editing OML models"
+	]
+
+	instance system-engineer : requirement:Stakeholder [
+		base:description "Analyzes OML models and ensures consistency across viewpoints"
+	]
+
+}
