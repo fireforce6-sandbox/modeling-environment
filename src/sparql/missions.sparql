@@ -1,0 +1,12 @@
+PREFIX base: <https://fireforce6.github.io/sierra/base#>
+PREFIX capability: <https://fireforce6.github.io/sierra/capability#>
+
+SELECT DISTINCT ?mission_id ?mission_desc
+WHERE {
+    ?mission a capability:Mission ;
+             base:description ?mission_desc .
+    
+    # Extract the instance name after the last # or /
+    BIND(REPLACE(STR(?mission), "^.*[/#]([^/#]+)$", "$1") AS ?mission_id)
+}
+ORDER BY ?mission_id
