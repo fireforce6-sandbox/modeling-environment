@@ -5,12 +5,16 @@ description <https://fireforce6.github.io/modeling-environment/stakeholders#> as
 	uses <https://fireforce6.github.io/sierra/base#> as base
 	uses <https://fireforce6.github.io/sierra/requirement#> as requirement
 
-	instance developer : requirement:Stakeholder [
+	instance model-author : requirement:Stakeholder [
 		base:description "Developers working in the Fireforce project creating and editing OML models"
 	]
 
 	instance system-engineer : requirement:Stakeholder [
 		base:description "Analyzes OML models and ensures consistency across viewpoints"
 	]
+
+    instance tool-admin : requirement:Stakeholder [
+        base:description "A non-user stakeholder who needs to maintain the modeling environment"
+    ]
 
 }

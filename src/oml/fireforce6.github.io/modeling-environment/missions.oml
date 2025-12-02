@@ -6,12 +6,12 @@ description <https://fireforce6.github.io/modeling-environment/missions#> as mis
 	uses <https://fireforce6.github.io/sierra/base#> as base
 	uses <https://fireforce6.github.io/sierra/capability#> as capability
 
-	instance M1 : capability:Mission [
-		base:description "Intuitive User Experience: Needs to be easy for users to intuitively use as a capable OML editor which validates models live."
+	instance M1_Rigorous_Authoring : capability:Mission [
+		base:description "This mission focuses on providing the user with an environment capable of logically defining domain terms (concepts, relations, and axioms) to create structured and unambiguous ontological models"
 	]
 
-	instance M2 : capability:Mission [
-		base:description "Integration: Needs to be integrated in the Git workflow to allow users to easily edit and validate their OML projects."
+	instance M2_Automated_System_Assurance : capability:Mission [
+		base:description "This mission ensures the quality and correctness of the models created by supporting automated verification, consistency checking, and logical analysis, often requiring specific performance timing"
 	]
 
 }

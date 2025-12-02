@@ -7,25 +7,26 @@ description <https://fireforce6.github.io/modeling-environment/requirements#> as
 	uses <https://fireforce6.github.io/sierra/requirement#> as requirement
   extends <https://fireforce6.github.io/modeling-environment/stakeholders#> as stakeholders
 
-	instance R1 : requirement:Requirement [
-		base:description "The modeling environment provides users the ability to edit OML files."
-        base:expression "The modeling environment shall allow users to create, edit, save, and validate OML files."
-		requirement:isExpressedBy stakeholders:developer
-		requirement:isExpressedBy stakeholders:system-engineer
+	instance R1_Vocabulary_Definition : requirement:Requirement [
+		base:description "The user must be able to define concepts, relations, and axioms."
+		requirement:isExpressedBy stakeholders:model-author
 	]
 
-	instance R2 : requirement:Requirement [
-		base:description "The Modeling Environment provides diagramming."
-	        base:expression "The modeling environment shall provide diagrammatic views of OML vocabularies."
-		requirement:isExpressedBy stakeholders:developer
+	instance R2_Analysis_Assurance : requirement:Requirement [
+		base:description "The system must verify model consistency and logical correctness."
+        requirement:isExpressedBy stakeholders:model-author
         requirement:isExpressedBy stakeholders:system-engineer
 	]
 
-	instance R3 : requirement:Requirement [
-		base:description "The modeling environment shall be integrated through via Git."
-		base:expression "The modeling environment shall allow users to manage OML models via Git workflows."
-		requirement:isExpressedBy stakeholders:developer
-		requirement:isExpressedBy stakeholders:system-engineer
+	instance R3_Version_Control : requirement:Requirement [
+		base:description "All model descriptions must be versioned and managed collaboratively."
+		requirement:isExpressedBy stakeholders:tool-admin
 	]
+
+    instance R4_Peformance_Timing : requirement:Requirement [
+        base:description "Critical analysis tasks must return results in under X seconds." 
+        requirement:isExpressedBy stakeholders:model-author
+        requirement:isExpressedBy stakeholders:system-engineer
+    ]
 
 }

@@ -8,15 +8,20 @@ description <https://fireforce6.github.io/modeling-environment/capabilities#> as
 	extends <https://fireforce6.github.io/modeling-environment/requirements#> as requirements 
 	extends <https://fireforce6.github.io/modeling-environment/missions#> as missions
 
-	instance C1 : capability:Capability [
-		base:description "Extension: Environment should be integrated in the Firceforce repository as an extension allowing access to the environment ."
-		capability:isDerivedFrom requirements:R3
+	instance C1_Model_Authoring : capability:Capability [
+		base:description "The ability for users to define and edit the formal logical constructs (concepts, relations) of domain vocabularies within the environment"
+		capability:isDerivedFrom requirements:R1_Vocabulary_Definition
 	]
 
-	instance C2 : capability:Capability [
-		base:description "OML Syntactical Understanding: Environment should have a syntactical understanding of the OML language to accurately validate and diagram user OML projects."
-		capability:isDerivedFrom requirements:R1
-		capability:isDerivedFrom requirements:R2
+	instance C2_Consistency_Checking : capability:Capability [
+		base:description "The specific functional ability to execute automated logical analysis (using Description Logic or similar techniques) to verify that models are consistent and logically correct, often subjected to performance timing constraints"
+		capability:isDerivedFrom requirements:R2_Analysis_Assurance
+		capability:isDerivedFrom requirements:R4_Peformance_Timing
 	]
+
+    instance C3_Configuration_Management : capability:Capability [
+        base:description "The ability to handle collaborative editing, versioning, and secure management of ontological models across teams, typically involving integration with external version control systems"
+        capability:isDerivedFrom requirements:R3_Version_Control
+    ]
 
 }

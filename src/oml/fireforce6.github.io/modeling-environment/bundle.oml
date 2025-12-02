@@ -7,5 +7,8 @@ description bundle <https://fireforce6.github.io/modeling-environment/bundle#> a
 
      // All descriptions included in this bundle
      includes <https://fireforce6.github.io/modeling-environment/description1#>
-
+     includes <https://fireforce6.github.io/modeling-environment/capabilities#>
+     includes <https://fireforce6.github.io/modeling-environment/missions#>
+     includes <https://fireforce6.github.io/modeling-environment/requirements#>
+     includes <https://fireforce6.github.io/modeling-environment/stakeholders#>
 }
