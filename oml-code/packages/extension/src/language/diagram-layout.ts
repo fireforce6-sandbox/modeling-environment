@@ -94,9 +94,9 @@ async function computeConceptScalarProps(shared: LangiumSharedServices, uri: str
 
 // Map our simple DiagramModel to a Sprotty SModelRoot suitable for ELK layout
 function diagramToSprotty(model: DiagramModel, conceptProps?: Map<string, string[]>): SModelRoot {
-  const nodeWidth = 160;
-  const baseNodeHeight = 72;
-  const lineHeight = 20;
+  const nodeWidth = 260;
+  const baseNodeHeight = 120;
+  const lineHeight = 22;
   const nodes: any[] = [];
   const edges: any[] = [];
 
