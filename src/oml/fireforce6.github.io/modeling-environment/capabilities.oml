@@ -17,11 +17,13 @@ description <https://fireforce6.github.io/modeling-environment/capabilities#> as
 		base:description "The specific functional ability to execute automated logical analysis (using Description Logic or similar techniques) to verify that models are consistent and logically correct, often subjected to performance timing constraints"
 		capability:isDerivedFrom requirements:R2_Analysis_Assurance
 		capability:isDerivedFrom requirements:R4_Peformance_Timing
+        capability:requires C1_Model_Authoring
 	]
 
     instance C3_Configuration_Management : capability:Capability [
         base:description "The ability to handle collaborative editing, versioning, and secure management of ontological models across teams, typically involving integration with external version control systems"
         capability:isDerivedFrom requirements:R3_Version_Control
+        capability:requires C2_Consistency_Checking
     ]
 
 }
